@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'masih_bingung',
+  appId: 'com.nilaiku.app',
+  appName: 'NilaiKu',
   webDir: 'www'
 };
 

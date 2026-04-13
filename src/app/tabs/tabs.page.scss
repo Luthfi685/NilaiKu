@@ -1,0 +1,28 @@
+.custom-tab-bar {
+  --background: var(--ion-card-background, rgba(30, 30, 45, 0.95));
+  --border: none;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: env(safe-area-inset-bottom);
+
+  ion-tab-button {
+    --color: rgba(255, 255, 255, 0.4);
+    --color-selected: var(--ion-color-primary);
+    font-size: 10px;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+
+    &.tab-selected {
+      ion-icon {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 8px var(--ion-color-primary));
+      }
+    }
+
+    ion-icon {
+      font-size: 22px;
+      transition: all 0.3s ease;
+    }
+  }
+}

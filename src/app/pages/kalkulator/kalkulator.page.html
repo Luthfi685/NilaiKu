@@ -1,0 +1,115 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="calculator"></ion-icon>
+        <span>Kalkulator</span>
+      </div>
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="kalkulator-container">
+
+    <div class="semester-section">
+      <div class="section-header">
+        <h2>Pilih Semester</h2>
+        <ion-button fill="clear" size="small" (click)="addSemester()" class="add-sem-btn">
+          <ion-icon name="add-circle" slot="start"></ion-icon>
+          Tambah
+        </ion-button>
+      </div>
+      <div class="semester-chips" *ngIf="semesters.length > 0">
+        <div class="chip" *ngFor="let sem of semesters"
+             [class.active]="selectedSemester?.id === sem.id"
+             (click)="selectSemester(sem)">
+          {{ sem.nama }}
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="semesters.length === 0">
+        <ion-icon name="school-outline"></ion-icon>
+        <p>Belum ada semester. Tap <strong>Tambah</strong> untuk mulai!</p>
+      </div>
+    </div>
+
+    <div *ngIf="selectedSemester" class="semester-content animate-slideUp">
+
+      <div class="ips-display glass-card">
+        <div class="ips-left">
+          <span class="ips-label">IPS {{ selectedSemester.nama }}</span>
+          <span class="ips-value">{{ currentIPS.toFixed(2) }}</span>
+        </div>
+        <div class="ips-right">
+          <span class="sks-info">{{ currentSKS }} SKS</span>
+          <ion-button fill="clear" color="danger" size="small" (click)="deleteSemester()">
+            <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+
+      <div class="form-card glass-card">
+        <h3 class="form-title">
+          <ion-icon [name]="editingMk ? 'create-outline' : 'add-circle-outline'" class="title-icon"></ion-icon> 
+          {{ editingMk ? 'Edit Mata Kuliah' : 'Tambah Mata Kuliah' }}
+        </h3>
+
+        <div class="form-group">
+          <label>Nama Mata Kuliah</label>
+          <input type="text" [(ngModel)]="mkNama" placeholder="cth: Pemrograman Web" class="form-input" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>SKS</label>
+            <select [(ngModel)]="mkSKS" class="form-input">
+              <option *ngFor="let s of [1,2,3,4,5,6]" [ngValue]="s">{{ s }} SKS</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label>Nilai</label>
+            <select [(ngModel)]="mkNilai" class="form-input">
+              <option *ngFor="let n of nilaiOptions" [ngValue]="n">{{ n }} ({{ getBobot(n).toFixed(2) }})</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <ion-button expand="block" (click)="addOrUpdateMK()" [disabled]="!mkNama.trim()" class="submit-btn">
+            <ion-icon [name]="editingMk ? 'checkmark' : 'add'" slot="start"></ion-icon>
+            {{ editingMk ? 'Update' : 'Tambah' }}
+          </ion-button>
+          <ion-button expand="block" fill="outline" (click)="resetForm()" *ngIf="editingMk" class="cancel-btn">
+            Batal
+          </ion-button>
+        </div>
+      </div>
+
+      <div class="mk-list" *ngIf="selectedSemester.mataKuliah.length > 0">
+        <h3 class="list-title"><ion-icon name="book-outline" class="title-icon"></ion-icon> Daftar Mata Kuliah</h3>
+        <div class="mk-item glass-card" *ngFor="let mk of selectedSemester.mataKuliah; let i = index"
+             [style.animation-delay]="(i * 0.05) + 's'">
+          <div class="mk-info">
+            <span class="mk-nama">{{ mk.nama }}</span>
+            <span class="mk-detail">{{ mk.sks }} SKS • Bobot: {{ getBobot(mk.nilai).toFixed(2) }}</span>
+          </div>
+          <div class="mk-actions">
+            <span class="mk-nilai" [attr.data-color]="getNilaiColor(mk.nilai)">{{ mk.nilai }}</span>
+            <ion-button fill="clear" size="small" (click)="editMK(mk)">
+              <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" size="small" color="danger" (click)="deleteMK(mk)">
+              <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-mk" *ngIf="selectedSemester.mataKuliah.length === 0">
+        <ion-icon name="document-text-outline"></ion-icon>
+        <p>Belum ada mata kuliah di semester ini</p>
+      </div>
+
+    </div>
+  </div>
+</ion-content>

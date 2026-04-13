@@ -1,37 +1,127 @@
 /*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
+ * NilaiKu - Global Styles
  */
 
-/* Core CSS required for Ionic components to work properly */
-@import "@ionic/angular/css/core.css";
+@import "~@ionic/angular/css/core.css";
+@import "~@ionic/angular/css/normalize.css";
+@import "~@ionic/angular/css/structure.css";
+@import "~@ionic/angular/css/typography.css";
+@import "~@ionic/angular/css/display.css";
+@import "~@ionic/angular/css/padding.css";
+@import "~@ionic/angular/css/float-elements.css";
+@import "~@ionic/angular/css/text-alignment.css";
+@import "~@ionic/angular/css/text-transformation.css";
+@import "~@ionic/angular/css/flex-utils.css";
 
-/* Basic CSS for apps built with Ionic */
-@import "@ionic/angular/css/normalize.css";
-@import "@ionic/angular/css/structure.css";
-@import "@ionic/angular/css/typography.css";
-@import "@ionic/angular/css/display.css";
+// === Global Typography ===
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-/* Optional CSS utils that can be commented out */
-@import "@ionic/angular/css/padding.css";
-@import "@ionic/angular/css/float-elements.css";
-@import "@ionic/angular/css/text-alignment.css";
-@import "@ionic/angular/css/text-transformation.css";
-@import "@ionic/angular/css/flex-utils.css";
+body {
+  background: var(--ion-background-color);
+  transition: background 0.3s ease, color 0.3s ease;
+}
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
+body.theme-ocean {
+  --ion-color-primary: #00c6ff;
+  --ion-color-primary-rgb: 0,198,255;
+  --ion-color-secondary: #0072ff;
+  --grad-purple: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+}
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
+body.theme-forest {
+  --ion-color-primary: #11998e;
+  --ion-color-primary-rgb: 17,153,142;
+  --ion-color-secondary: #38ef7d;
+  --grad-purple: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+}
+
+body.theme-sunset {
+  --ion-color-primary: #fc4a1a;
+  --ion-color-primary-rgb: 252,74,26;
+  --ion-color-secondary: #f7b733;
+  --grad-purple: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+}
+
+// === Dark mode background pattern ===
+body.dark {
+  background: #0f0f1a;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(118, 75, 162, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(67, 233, 123, 0.04) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+// === Light mode overrides ===
+body:not(.dark) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .custom-tab-bar {
+    --background: rgba(255, 255, 255, 0.92) !important;
+    border-top-color: rgba(0, 0, 0, 0.06) !important;
+
+    ion-tab-button {
+      --color: rgba(0, 0, 0, 0.35) !important;
+    }
+  }
+
+  .form-input {
+    background: rgba(0, 0, 0, 0.03) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    color: #1a1a2e !important;
+
+    option {
+      background: #fff !important;
+      color: #1a1a2e !important;
+    }
+  }
+
+  .chip:not(.active) {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .ring-bg {
+    stroke: rgba(0, 0, 0, 0.06) !important;
+  }
+}
+
+// === Scrollbar ===
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 2px;
+}
+
+// === Ionic Component Overrides ===
+ion-content {
+  --background: transparent;
+}
+
+ion-toolbar {
+  --background: transparent;
+}
+
+ion-tab-bar {
+  --background: transparent;
+}
+
+// === Selection ===
+::selection {
+  background: rgba(102, 126, 234, 0.3);
+}

@@ -1,0 +1,271 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="school" class="app-logo"></ion-icon>
+        <span>NilaiKu</span>
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openSettings()">
+        <ion-icon name="settings-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="dashboard-container">
+
+    <div class="greeting-section animate-fadeIn">
+      <ion-icon [name]="greetingIcon" class="greeting-icon"></ion-icon>
+      <h1 class="greeting-text">{{ greeting }}, {{ userName }}!</h1>
+      <p class="greeting-sub">Pantau perkembangan akademikmu di sini</p>
+    </div>
+
+    <div class="ipk-hero-card glass-card animate-slideUp">
+      <div class="hero-top">
+        <div class="ipk-ring-container">
+          <svg class="ipk-ring" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#667eea" />
+                <stop offset="100%" style="stop-color:#764ba2" />
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="60" cy="60" r="50" />
+            <circle class="ring-progress" cx="60" cy="60" r="50"
+              [style.strokeDasharray]="'314'"
+              [style.strokeDashoffset]="314 - (314 * ipkPercentage / 100)" />
+          </svg>
+          <div class="ipk-value">
+            <span class="ipk-number">{{ summary.ipk.toFixed(2) }}</span>
+            <span class="ipk-label">IPK</span>
+          </div>
+        </div>
+        <div class="hero-info">
+          <div class="hero-stat">
+            <span class="hero-stat-label">Status</span>
+            <span class="hero-stat-value status-badge" [attr.data-status]="summary.statusColor">
+              {{ summary.statusAkademik }}
+            </span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-label">Predikat</span>
+            <span class="hero-stat-value">{{ getPredikat() }}</span>
+          </div>
+          <div class="hero-stat" *ngIf="chartData.ipsData.length >= 2">
+            <span class="hero-stat-label">Tren IPS</span>
+            <span class="hero-stat-value trend" [attr.data-trend]="getIPSTrend()">
+              <ion-icon [name]="getIPSTrend() === 'up' ? 'trending-up' : getIPSTrend() === 'down' ? 'trending-down' : 'remove'"></ion-icon>
+              {{ getIPSTrend() === 'up' ? 'Naik' : getIPSTrend() === 'down' ? 'Turun' : 'Stabil' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid animate-slideUp">
+      <div class="stat-card glass-card">
+        <div class="stat-icon-wrap purple"><ion-icon name="school"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ summary.totalSKS }}</span>
+          <span class="stat-label">Total SKS</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card">
+        <div class="stat-icon-wrap pink"><ion-icon name="layers"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ summary.totalSemester }}</span>
+          <span class="stat-label">Semester</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card">
+        <div class="stat-icon-wrap blue"><ion-icon name="trending-up"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ summary.ipsTermutar.toFixed(2) }}</span>
+          <span class="stat-label">IPS Terakhir</span>
+        </div>
+      </div>
+      <div class="stat-card glass-card">
+        <div class="stat-icon-wrap green"><ion-icon name="ribbon"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value"><ion-icon [name]="summary.ipk >= 3.51 ? 'trophy' : summary.ipk >= 2.76 ? 'star' : summary.ipk >= 2.00 ? 'thumbs-up' : 'book'"></ion-icon></span>
+          <span class="stat-label">Badge</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SKS Progress -->
+    <div class="sks-progress-card glass-card animate-slideUp">
+      <div class="sks-progress-header">
+        <h3><ion-icon name="school-outline" class="title-icon"></ion-icon> Progress Kelulusan ({{ targetSKS }} SKS)</h3>
+        <span class="sks-progress-text">{{ summary.totalSKS }} / {{ targetSKS }} SKS</span>
+      </div>
+      <div class="sks-progress-bar-bg">
+        <div class="sks-progress-bar-fill" [style.width.%]="progressSKS"></div>
+      </div>
+      <p class="sks-progress-desc">Sisa {{ targetSKS > summary.totalSKS ? targetSKS - summary.totalSKS : 0 }} SKS lagi untuk mencapai target kelulusan.</p>
+      
+      <!-- AI Prediksi Lulus -->
+      <div class="prediksi-box">
+        <p [innerHTML]="prediksiLulus"></p>
+      </div>
+    </div>
+
+    <!-- Alert Perbaikan Akademik -->
+    <div class="alert-perbaikan-card animate-slideUp" *ngIf="perluPerbaikan.length > 0">
+      <div class="alert-header">
+        <ion-icon name="warning"></ion-icon>
+        <h3>Perhatian Akademik</h3>
+      </div>
+      <p class="alert-desc">Kamu memiliki <strong>{{ perluPerbaikan.length }}</strong> mata kuliah yang sebaiknya diulang/diperbaiki (Nilai D atau E):</p>
+      
+      <div class="alert-list">
+        <div class="alert-item" *ngFor="let item of perluPerbaikan">
+          <div class="alert-item-left">
+            <span class="alert-mk-nama">{{ item.mk.nama }}</span>
+            <span class="alert-mk-sem">{{ item.semester }} • {{ item.mk.sks }} SKS</span>
+          </div>
+          <div class="alert-item-right">
+            <span class="alert-badge" [attr.data-nilai]="item.mk.nilai">{{ item.mk.nilai }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-section glass-card animate-slideUp" *ngIf="chartData.labels.length > 0">
+      <div class="chart-header">
+        <h3><ion-icon name="trending-up-outline" class="title-icon"></ion-icon> Perkembangan Nilai</h3>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-line solid"></span>IPS</span>
+          <span class="legend-item"><span class="legend-line dashed"></span>IPK</span>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas #miniChart class="mini-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-section glass-card animate-slideUp empty-chart" *ngIf="chartData.labels.length === 0">
+      <div class="empty-chart-content">
+        <ion-icon name="analytics-outline"></ion-icon>
+        <p>Grafik muncul setelah kamu input semester & mata kuliah di tab <strong>Kalkulator</strong></p>
+      </div>
+    </div>
+
+    <div class="semester-quick glass-card animate-slideUp" *ngIf="semesterDetails.length > 0">
+      <h3><ion-icon name="clipboard-outline" class="title-icon"></ion-icon> Ringkasan Per Semester</h3>
+      <div class="semester-scroll">
+        <div class="sem-mini-card" *ngFor="let sem of semesterDetails" [attr.data-current]="sem.ips >= 3.0 ? 'good' : 'average'">
+          <div class="sem-mini-top">
+            <span class="sem-mini-name">{{ sem.nama }}</span>
+            <span class="sem-mini-sks">{{ sem.sks }} SKS</span>
+          </div>
+          <span class="sem-mini-ips" [attr.data-quality]="sem.ips >= 3.5 ? 'high' : sem.ips >= 2.0 ? 'mid' : 'low'">
+            {{ sem.ips.toFixed(2) }}
+          </span>
+          <div class="sem-mini-bar">
+            <div class="sem-mini-fill" [style.width.%]="(sem.ips / 4) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card glass-card animate-slideUp">
+      <h3 class="info-title"><ion-icon name="bulb-outline" class="title-icon"></ion-icon> Panduan Nilai</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <ion-icon name="trophy" class="info-icon" color="success"></ion-icon>
+          <div class="info-text">
+            <span class="info-range success">≥ 3.51</span>
+            <span class="info-label">Cum Laude</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <ion-icon name="star" class="info-icon" color="primary"></ion-icon>
+          <div class="info-text">
+            <span class="info-range primary">2.76-3.50</span>
+            <span class="info-label">Sangat Memuaskan</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <ion-icon name="thumbs-up" class="info-icon" color="warning"></ion-icon>
+          <div class="info-text">
+            <span class="info-range warning">2.00-2.75</span>
+            <span class="info-label">Memuaskan</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <ion-icon name="book" class="info-icon" color="danger"></ion-icon>
+          <div class="info-text">
+            <span class="info-range danger">&lt; 2.00</span>
+            <span class="info-label">Perlu Ditingkatkan</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Settings -->
+  <ion-modal [isOpen]="isSettingsOpen" (didDismiss)="isSettingsOpen = false" class="settings-modal">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar>
+          <ion-title><ion-icon name="settings-outline" class="title-icon"></ion-icon> Pengaturan Profil</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="isSettingsOpen = false">Batal</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding">
+        <div class="settings-container">
+          <div class="setting-group glass-card">
+            <h3>User Profile</h3>
+            <div class="form-group">
+              <label>Nama Panggilan</label>
+              <ion-input [(ngModel)]="tempUserName" placeholder="Masukkan nama..." class="form-input" clearInput="true"></ion-input>
+            </div>
+          </div>
+
+          <div class="setting-group glass-card">
+            <h3>Tampilan</h3>
+            
+            <div class="color-picker-container">
+              <label>Warna Aksen</label>
+              <div class="color-options">
+                <button class="color-btn" [class.active]="currentColor === 'default'" style="background: linear-gradient(135deg, #667eea, #764ba2);" (click)="selectColor('default')"></button>
+                <button class="color-btn" [class.active]="currentColor === 'ocean'" style="background: linear-gradient(135deg, #00c6ff, #0072ff);" (click)="selectColor('ocean')"></button>
+                <button class="color-btn" [class.active]="currentColor === 'forest'" style="background: linear-gradient(135deg, #11998e, #38ef7d);" (click)="selectColor('forest')"></button>
+                <button class="color-btn" [class.active]="currentColor === 'sunset'" style="background: linear-gradient(135deg, #fc4a1a, #f7b733);" (click)="selectColor('sunset')"></button>
+              </div>
+            </div>
+
+            <div class="theme-toggle" (click)="toggleTheme()">
+              <div class="toggle-info">
+                <ion-icon [name]="currentTheme === 'dark' ? 'moon' : 'sunny'"></ion-icon>
+                <span>{{ currentTheme === 'dark' ? 'Dark Mode' : 'Light Mode' }}</span>
+              </div>
+              <ion-icon class="toggle-action" name="sync-outline"></ion-icon>
+            </div>
+          </div>
+
+          <div class="setting-group glass-card danger-zone">
+            <h3>Zona Berbahaya</h3>
+            <ion-button expand="block" color="danger" fill="outline" (click)="resetData()">
+              <ion-icon name="trash" slot="start"></ion-icon>
+              Hapus Semua Data
+            </ion-button>
+            <p class="danger-text">Tindakan ini tidak bisa dibatalkan.</p>
+          </div>
+
+          <ion-button expand="block" (click)="saveSettings()" class="save-settings-btn">
+            Simpan Perubahan
+          </ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+</ion-content>

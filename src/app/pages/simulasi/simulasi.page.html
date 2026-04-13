@@ -1,0 +1,116 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="rocket"></ion-icon>
+        <span>Simulasi Target</span>
+      </div>
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="simulasi-container">
+
+    <!-- Current Stats -->
+    <div class="current-stats glass-card animate-slideUp">
+      <h3><ion-icon name="stats-chart"></ion-icon> Kondisi Saat Ini</h3>
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-val gradient-text">{{ currentIPK.toFixed(2) }}</span>
+          <span class="stat-lbl">IPK Sekarang</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-val">{{ currentSKS }}</span>
+          <span class="stat-lbl">Total SKS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Form -->
+    <div class="input-card glass-card animate-slideUp">
+      <h3><ion-icon name="flag"></ion-icon> Target yang Diinginkan</h3>
+
+      <div class="form-group">
+        <label>Target IPK</label>
+        <div class="range-display">
+          <input type="range" min="1.00" max="4.00" step="0.01" [(ngModel)]="targetIPK" class="custom-range" />
+          <span class="range-value gradient-text">{{ targetIPK.toFixed(2) }}</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Sisa SKS yang Akan Diambil</label>
+        <div class="range-display">
+          <input type="range" min="1" max="160" step="1" [(ngModel)]="sksSisa" class="custom-range" />
+          <span class="range-value">{{ sksSisa }} SKS</span>
+        </div>
+      </div>
+
+      <ion-button expand="block" (click)="simulate()" class="sim-btn">
+        <ion-icon name="flash" slot="start"></ion-icon>
+        Hitung Simulasi
+      </ion-button>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card glass-card animate-slideUp" *ngIf="hasCalculated && result" [attr.data-status]="result.status">
+
+      <div class="result-status">
+        <ion-icon [name]="getStatusIcon()" [color]="getStatusColor()"></ion-icon>
+        <span class="status-text" [style.color]="'var(--ion-color-' + getStatusColor() + ')'">{{ getStatusText() }}</span>
+      </div>
+
+      <div class="result-main">
+        <div class="result-item">
+          <span class="result-label">Nilai rata-rata minimum</span>
+          <span class="result-value big" [style.color]="'var(--ion-color-' + getStatusColor() + ')'">
+            {{ result.nilaiMinimum.toFixed(2) }}
+          </span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">Setara dengan nilai huruf</span>
+          <span class="result-value">{{ result.nilaiHuruf }}</span>
+        </div>
+      </div>
+
+      <div class="result-explanation">
+        <p *ngIf="result.status === 'achievable'">
+          <ion-icon name="checkmark-circle" style="color:#2dd36f;vertical-align:middle"></ion-icon>
+          Kamu perlu mendapat rata-rata minimal <strong>{{ result.nilaiHuruf }}</strong> di <strong>{{ sksSisa }} SKS</strong> sisa untuk mencapai IPK <strong>{{ targetIPK.toFixed(2) }}</strong>.
+        </p>
+        <p *ngIf="result.status === 'difficult'">
+          <ion-icon name="warning" style="color:#ffc409;vertical-align:middle"></ion-icon>
+          Target cukup menantang. Kamu harus mendapat rata-rata <strong>{{ result.nilaiHuruf }}</strong> atau lebih tinggi di semua mata kuliah sisa.
+        </p>
+        <p *ngIf="result.status === 'impossible'">
+          <ion-icon name="close-circle" style="color:#eb445a;vertical-align:middle"></ion-icon>
+          Maaf, meskipun kamu mendapat nilai A (4.00) di semua <strong>{{ sksSisa }} SKS</strong> sisa, IPK <strong>{{ targetIPK.toFixed(2) }}</strong> tidak dapat tercapai.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="tips-card glass-card animate-slideUp">
+      <h3><ion-icon name="bulb"></ion-icon> Tips Meningkatkan IPK</h3>
+      <div class="tip-item">
+        <ion-icon name="book" class="tip-icon"></ion-icon>
+        <span>Perbaiki mata kuliah dengan nilai C atau di bawahnya melalui remedial</span>
+      </div>
+      <div class="tip-item">
+        <ion-icon name="star" class="tip-icon"></ion-icon>
+        <span>Prioritaskan mata kuliah dengan SKS besar untuk dampak lebih besar</span>
+      </div>
+      <div class="tip-item">
+        <ion-icon name="people" class="tip-icon"></ion-icon>
+        <span>Bentuk kelompok belajar untuk saling membantu memahami materi</span>
+      </div>
+      <div class="tip-item">
+        <ion-icon name="time" class="tip-icon"></ion-icon>
+        <span>Buat jadwal belajar terstruktur dan konsisten setiap hari</span>
+      </div>
+    </div>
+
+  </div>
+</ion-content>

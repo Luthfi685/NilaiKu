@@ -1,0 +1,129 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="bar-chart"></ion-icon>
+        <span>Rekap Akademik</span>
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="exportPDF()" [disabled]="exporting || semesters.length === 0" color="primary">
+        <ion-icon name="download-outline" slot="icon-only" *ngIf="!exporting"></ion-icon>
+        <ion-spinner name="crescent" *ngIf="exporting"></ion-spinner>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="rekap-container">
+
+    <!-- Summary Cards -->
+    <div class="summary-row animate-slideUp">
+      <div class="summary-card glass-card">
+        <span class="summary-value gradient-text">{{ ipk.toFixed(2) }}</span>
+        <span class="summary-label">IPK Kumulatif</span>
+      </div>
+      <div class="summary-card glass-card">
+        <span class="summary-value">{{ totalSKS }}</span>
+        <span class="summary-label">Total SKS</span>
+      </div>
+      <div class="summary-card glass-card">
+        <span class="summary-value">{{ semesters.length }}</span>
+        <span class="summary-label">Semester</span>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card glass-card animate-slideUp" *ngIf="chartData.labels.length > 0">
+      <div class="chart-header">
+        <h3><ion-icon name="trending-up-outline" class="title-icon"></ion-icon> Grafik Perkembangan</h3>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot ips"></span>IPS</span>
+          <span class="legend-item"><span class="legend-dot ipk"></span>IPK</span>
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas #chartCanvas class="chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Semester Detail Accordion -->
+    <div class="semester-accordion" *ngIf="semesters.length > 0">
+      <h3 class="section-title"><ion-icon name="clipboard-outline" class="title-icon"></ion-icon> Detail Per Semester</h3>
+
+      <div class="accordion-item glass-card" *ngFor="let sem of semesters" [class.expanded]="expandedSemester === sem.id">
+        <div class="accordion-header" (click)="toggleSemester(sem.id)">
+          <div class="acc-left">
+            <span class="acc-name">{{ sem.nama }}</span>
+            <span class="acc-meta">{{ getSKS(sem) }} SKS • {{ sem.mataKuliah.length }} MK</span>
+          </div>
+          <div class="acc-right">
+            <span class="acc-ips">{{ getIPS(sem).toFixed(2) }}</span>
+            <ion-icon [name]="expandedSemester === sem.id ? 'chevron-up' : 'chevron-down'"></ion-icon>
+          </div>
+        </div>
+        <div class="accordion-body" *ngIf="expandedSemester === sem.id">
+          <div class="mk-row" *ngFor="let mk of sem.mataKuliah">
+            <span class="mk-name">{{ mk.nama }}</span>
+            <span class="mk-sks">{{ mk.sks }} SKS</span>
+            <span class="mk-grade">{{ mk.nilai }}</span>
+            <span class="mk-bobot">{{ getBobot(mk.nilai).toFixed(2) }}</span>
+          </div>
+          <div class="mk-row total-row">
+            <span class="mk-name"><strong>Total</strong></span>
+            <span class="mk-sks"><strong>{{ getSKS(sem) }} SKS</strong></span>
+            <span class="mk-grade"></span>
+            <span class="mk-bobot"><strong>IPS: {{ getIPS(sem).toFixed(2) }}</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty -->
+    <div class="empty-state" *ngIf="semesters.length === 0">
+      <ion-icon name="analytics-outline"></ion-icon>
+      <h3>Belum Ada Data</h3>
+      <p>Tambahkan semester dan mata kuliah di tab Kalkulator</p>
+    </div>
+
+  </div>
+
+  <!-- Hidden Container for PDF Export -->
+  <div id="pdf-export-container" *ngIf="exporting" style="position: absolute; left: -9999px; top: 0; width: 800px; background: white; padding: 40px; color: black; z-index: -1;">
+    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 20px;">
+      <h1 style="color: #333; margin: 0 0 10px 0; font-family: sans-serif;">Transkrip Nilai Akademik</h1>
+      <p style="margin: 0; font-size: 16px; color: #666; font-family: sans-serif;">IPK Kumulatif: <strong style="color: #667eea;">{{ ipk.toFixed(2) }}</strong> | Total SKS: <strong>{{ totalSKS }}</strong></p>
+    </div>
+
+    <div *ngFor="let sem of semesters" style="margin-bottom: 25px; font-family: sans-serif;">
+      <div style="background: #f8f9fa; padding: 10px 15px; border-radius: 8px 8px 0 0; border: 1px solid #ddd; border-bottom: none; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; color: #333; font-size: 16px;">{{ sem.nama }}</h3>
+        <span style="font-weight: bold; color: #667eea;">IPS: {{ getIPS(sem).toFixed(2) }} | {{ getSKS(sem) }} SKS</span>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="background: #eaeff5;">
+            <th style="padding: 10px; text-align: left; border: 1px solid #ddd; color: #444;">Mata Kuliah</th>
+            <th style="padding: 10px; text-align: center; border: 1px solid #ddd; color: #444; width: 80px;">SKS</th>
+            <th style="padding: 10px; text-align: center; border: 1px solid #ddd; color: #444; width: 80px;">Nilai</th>
+            <th style="padding: 10px; text-align: center; border: 1px solid #ddd; color: #444; width: 80px;">Bobot</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mk of sem.mataKuliah">
+            <td style="padding: 10px; border: 1px solid #ddd; color: #333;">{{ mk.nama }}</td>
+            <td style="padding: 10px; text-align: center; border: 1px solid #ddd; color: #333;">{{ mk.sks }}</td>
+            <td style="padding: 10px; text-align: center; border: 1px solid #ddd; color: #333;">{{ mk.nilai }}</td>
+            <td style="padding: 10px; text-align: center; border: 1px solid #ddd; color: #333;">{{ getBobot(mk.nilai).toFixed(2) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div style="margin-top: 50px; text-align: right; font-family: sans-serif; color: #666; font-size: 12px;">
+      <p>Digenerate oleh aplikasi NilaiKu</p>
+    </div>
+  </div>
+
+</ion-content>

@@ -1,0 +1,7 @@
+{
+  "name": "masih_bingung",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

@@ -183,75 +183,76 @@ export class KalkulatorPage implements OnInit {
   }
 
   async parseOCRText(text: string) {
-    const lines = text.split('\n');
-    let found = 0;
-    
-    if (!this.selectedSemester) {
-      this.addSemester();
+    // PRE-PROCESSING: normalisasi teks OCR
+    text = text
+      .replace(/&amp;/g, '&')
+      .replace(/\[/g, 'I').replace(/\]/g, 'I')
+      .replace(/[^\S\n]+/g, ' '); // collapse spasi dobel tapi JAGA newline
+
+    const rawLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    // SMART LINE MERGER:
+    // Sebuah baris matkul yang lengkap PASTI mengandung kode periode (20241/20242).
+    // Kalau baris belum punya periode, gabungkan terus dengan baris berikutnya.
+    const hasPeriode = (s: string) => /\b2[0oO]\d{2,3}\b/i.test(s);
+    const mergedLines: string[] = [];
+
+    for (const cur of rawLines) {
+      // Kalau baris terakhir di buffer belum punya periode → gabungkan dengan baris sekarang
+      if (mergedLines.length > 0 && !hasPeriode(mergedLines[mergedLines.length - 1])) {
+        mergedLines[mergedLines.length - 1] += ' ' + cur;
+      } else {
+        mergedLines.push(cur);
+      }
     }
 
-    // Pemisahan ekstraksi: Ambil Kode, Nama, Periode, Semester, SKS. Sisanya dibiarkan ke belakang.
-    // Periode sengaja dibuat spesifik 2[0O] (cth 20242, 2O242) biar nggak gampang nyasar.
-    const firstPartRegex = /([A-Z0-9]{5,})\s+(.+?)\s+(?:2[0O]\d{2,3})\s+(?:\d|o|i|l)\s+(\d|o|i|l)(.*)/i;
+    if (!this.selectedSemester) { this.addSemester(); }
 
-    for (let line of lines) {
+    let found = 0;
+
+    for (let line of mergedLines) {
       line = line.trim();
-      if (!line || line.toLowerCase().includes('mata kuliah') || line.toLowerCase().includes('semester')) continue;
-      
-      let nama = '', sks = 0, nilai = '';
+      if (!line || line.toLowerCase().includes('mata kuliah')) continue;
+      if (!hasPeriode(line)) continue; // skip baris yang gak ada periode sama sekali
 
-      // Tokenize baris teks
+      let nama = '', sks = 0, nilai = '';
       let tokens = line.split(/\s+/);
-      
-      // Hapus nomor urut di awal baris (misal '1', '2.', '10')
-      while (tokens.length > 0 && /^\d+[\.\)]?$/.test(tokens[0])) {
-         tokens.shift();
+
+      // Hapus nomor urut di awal (1, 2., 10, 11, dll)
+      while (tokens.length > 0 && /^\d+[\.\)]?$/.test(tokens[0])) tokens.shift();
+
+      // Hapus karakter sampah pendek (OCR typo seperti 'n', 'i') hanya jika token berikutnya kode matkul
+      while (tokens.length > 1 && tokens[0].length <= 2 && !/^\d+$/.test(tokens[0]) && /^[A-Z]{2,}[0-9]{3,}/i.test(tokens[1])) {
+        tokens.shift();
       }
 
       if (tokens.length < 5) continue;
 
-      // Hapus Kode Matkul (biasanya alphanumeric > 5 huruf)
-      if (/^[A-Z0-9]{5,15}$/i.test(tokens[0])) {
-         tokens.shift();
-      }
+      // Buang Kode Matkul di depan (IF1220008, UBPIF0003, dll)
+      if (/^[A-Z]{2,}[0-9]{3,}/i.test(tokens[0])) tokens.shift();
 
-      // Cari batas akhir Nama Matkul yaitu saat ketemu Periode (misal: 20241, 20242, 2O242)
-      let nameTokens = [];
-      let sksTokenIndex = -1;
-      
+      // Kumpulkan Nama Matkul hingga ketemu token Periode
+      const nameTokens: string[] = [];
+      let sksIdx = -1;
       for (let i = 0; i < tokens.length; i++) {
-         let t = tokens[i];
-         // Deteksi Periode: 5 karakter berisi angka (bisa typo O)
-         if ((/^2[0oO]\d{2,3}$/i.test(t) || /^\d{5}$/.test(t)) && i > 0) {
-             // Jika ini periode, Semester = i+1, SKS = i+2
-             if (i + 2 < tokens.length) {
-                 sksTokenIndex = i + 2;
-             }
-             break;
-         }
-         nameTokens.push(t);
+        const t = tokens[i];
+        if (/^2[0oO]\d{2,3}$/i.test(t) || /^2\d{4}$/.test(t)) {
+          if (i + 2 < tokens.length) sksIdx = i + 2;
+          break;
+        }
+        nameTokens.push(t);
       }
 
-      if (sksTokenIndex !== -1) {
-         nama = nameTokens.join(' ');
-         
-         let sksStr = tokens[sksTokenIndex].toLowerCase().replace(/[il]/gi, '1').replace(/[oz]/gi, '0');
-         sks = parseInt(sksStr, 10);
-         
-         // Ekstrak Grade dari semua sisa token di belakang
-         let sisaTokens = tokens.slice(sksTokenIndex + 1);
-         let validGradeOptions = ['A','A-','B+','B','B-','C+','C','C-','D','E'];
-         let validTokens = sisaTokens.map(w => w.replace(/[^A-E\+\-]/g, '')).filter(w => validGradeOptions.includes(w));
-         
-         if (validTokens.length > 0) {
-            nilai = validTokens[validTokens.length - 1]; // Selalu ambil yg paling terakhir dikanan
-         }
-      } else {
-         // Fallback darurat kalau gagal nemuin kode periode
-         const altMatch = line.match(/([A-Z][A-Za-z\s&0-9]+?)\s+(\d(?:\.\d)?)\s+([A-E][+-]?)(?:\s|$)/i);
-         if (altMatch) {
-            nama = altMatch[1]; sks = Math.round(parseFloat(altMatch[2])); nilai = altMatch[3].toUpperCase();
-         }
+      if (sksIdx !== -1) {
+        nama = nameTokens.join(' ').trim();
+        const sksStr = tokens[sksIdx].toLowerCase().replace(/[il]/gi,'1').replace(/[oz]/gi,'0');
+        sks = parseInt(sksStr, 10);
+
+        const validGrades = ['A','A-','B+','B','B-','C+','C','C-','D','E'];
+        const gradeTokens = tokens.slice(sksIdx + 1)
+          .map(w => w.replace(/[^A-E\+\-]/g, ''))
+          .filter(w => validGrades.includes(w));
+        if (gradeTokens.length > 0) nilai = gradeTokens[gradeTokens.length - 1];
       }
 
       if (nama && sks > 0 && nilai) {

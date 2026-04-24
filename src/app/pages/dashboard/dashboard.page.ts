@@ -22,6 +22,7 @@ export class DashboardPage implements OnInit {
   currentColor = 'default';
   isSettingsOpen = false;
   tempUserName = '';
+  tempTargetSKS = 144;
   chartData: { labels: string[]; ipsData: number[]; ipkData: number[] } = { labels: [], ipsData: [], ipkData: [] };
   semesterDetails: { nama: string; ips: number; sks: number }[] = [];
   perluPerbaikan: { mk: any; semester: string }[] = [];
@@ -32,6 +33,7 @@ export class DashboardPage implements OnInit {
     this.currentTheme = this.nilaiService.getTheme();
     this.currentColor = this.nilaiService.getColorTheme();
     this.userName = this.nilaiService.getUserProfile();
+    this.targetSKS = this.nilaiService.getTargetSKS();
     this.updateGreeting();
   }
 
@@ -78,6 +80,7 @@ export class DashboardPage implements OnInit {
 
   openSettings() {
     this.tempUserName = this.userName;
+    this.tempTargetSKS = this.targetSKS;
     this.isSettingsOpen = true;
   }
 
@@ -88,8 +91,14 @@ export class DashboardPage implements OnInit {
 
   saveSettings() {
     this.userName = this.tempUserName || 'Mahasiswa';
+    this.targetSKS = this.tempTargetSKS > 0 ? this.tempTargetSKS : 144;
+    
     this.nilaiService.setUserProfile(this.userName);
+    this.nilaiService.setTargetSKS(this.targetSKS);
+    
     this.updateGreeting();
+    this.calculatePrediksiLulus(); // recalc progress
+    this.progressSKS = Math.min((this.summary.totalSKS / this.targetSKS) * 100, 100);
     this.isSettingsOpen = false;
   }
 

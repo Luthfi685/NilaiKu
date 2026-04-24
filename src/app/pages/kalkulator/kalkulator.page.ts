@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { NilaiService, Semester, MataKuliah } from '../../services/nilai.service';
-import { AlertController, ActionSheetController } from '@ionic/angular';
+import { AlertController, ActionSheetController, LoadingController, ToastController } from '@ionic/angular';
+// @ts-ignore
+import * as Tesseract from 'tesseract.js';
 
 @Component({
   selector: 'app-kalkulator',
@@ -21,10 +23,14 @@ export class KalkulatorPage implements OnInit {
   mkNilai = 'A';
   editingMk: MataKuliah | null = null;
 
+  @ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
+
   constructor(
     private nilaiService: NilaiService,
     private alertController: AlertController,
-    private actionSheetController: ActionSheetController
+    private actionSheetController: ActionSheetController,
+    private loadingController: LoadingController,
+    private toastController: ToastController
   ) {}
 
   ngOnInit() {
@@ -142,5 +148,149 @@ export class KalkulatorPage implements OnInit {
     if (bobot >= 2.5) return 'primary';
     if (bobot >= 1.5) return 'warning';
     return 'danger';
+  }
+
+  triggerFileSelect() {
+    if (this.fileInput) {
+      this.fileInput.nativeElement.click();
+    }
+  }
+
+  async handleImageScan(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    const loading = await this.loadingController.create({
+      message: 'Membaca teks dari gambar... Mohon tunggu.',
+    });
+    await loading.present();
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+        const dataUrl = e.target.result;
+        const { data: { text } } = await Tesseract.recognize(dataUrl, 'eng+ind');
+        await loading.dismiss();
+        this.parseOCRText(text);
+        input.value = ''; // reset
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      await loading.dismiss();
+      this.showToast('Gagal memproses gambar.', 'danger');
+    }
+  }
+
+  async parseOCRText(text: string) {
+    const lines = text.split('\n');
+    let found = 0;
+    
+    if (!this.selectedSemester) {
+      this.addSemester();
+    }
+
+    // Pemisahan ekstraksi: Ambil Kode, Nama, Periode, Semester, SKS. Sisanya dibiarkan ke belakang.
+    // Periode sengaja dibuat spesifik 2[0O] (cth 20242, 2O242) biar nggak gampang nyasar.
+    const firstPartRegex = /([A-Z0-9]{5,})\s+(.+?)\s+(?:2[0O]\d{2,3})\s+(?:\d|o|i|l)\s+(\d|o|i|l)(.*)/i;
+
+    for (let line of lines) {
+      line = line.trim();
+      if (!line || line.toLowerCase().includes('mata kuliah') || line.toLowerCase().includes('semester')) continue;
+      
+      let nama = '', sks = 0, nilai = '';
+
+      // Tokenize baris teks
+      let tokens = line.split(/\s+/);
+      
+      // Hapus nomor urut di awal baris (misal '1', '2.', '10')
+      while (tokens.length > 0 && /^\d+[\.\)]?$/.test(tokens[0])) {
+         tokens.shift();
+      }
+
+      if (tokens.length < 5) continue;
+
+      // Hapus Kode Matkul (biasanya alphanumeric > 5 huruf)
+      if (/^[A-Z0-9]{5,15}$/i.test(tokens[0])) {
+         tokens.shift();
+      }
+
+      // Cari batas akhir Nama Matkul yaitu saat ketemu Periode (misal: 20241, 20242, 2O242)
+      let nameTokens = [];
+      let sksTokenIndex = -1;
+      
+      for (let i = 0; i < tokens.length; i++) {
+         let t = tokens[i];
+         // Deteksi Periode: 5 karakter berisi angka (bisa typo O)
+         if ((/^2[0oO]\d{2,3}$/i.test(t) || /^\d{5}$/.test(t)) && i > 0) {
+             // Jika ini periode, Semester = i+1, SKS = i+2
+             if (i + 2 < tokens.length) {
+                 sksTokenIndex = i + 2;
+             }
+             break;
+         }
+         nameTokens.push(t);
+      }
+
+      if (sksTokenIndex !== -1) {
+         nama = nameTokens.join(' ');
+         
+         let sksStr = tokens[sksTokenIndex].toLowerCase().replace(/[il]/gi, '1').replace(/[oz]/gi, '0');
+         sks = parseInt(sksStr, 10);
+         
+         // Ekstrak Grade dari semua sisa token di belakang
+         let sisaTokens = tokens.slice(sksTokenIndex + 1);
+         let validGradeOptions = ['A','A-','B+','B','B-','C+','C','C-','D','E'];
+         let validTokens = sisaTokens.map(w => w.replace(/[^A-E\+\-]/g, '')).filter(w => validGradeOptions.includes(w));
+         
+         if (validTokens.length > 0) {
+            nilai = validTokens[validTokens.length - 1]; // Selalu ambil yg paling terakhir dikanan
+         }
+      } else {
+         // Fallback darurat kalau gagal nemuin kode periode
+         const altMatch = line.match(/([A-Z][A-Za-z\s&0-9]+?)\s+(\d(?:\.\d)?)\s+([A-E][+-]?)(?:\s|$)/i);
+         if (altMatch) {
+            nama = altMatch[1]; sks = Math.round(parseFloat(altMatch[2])); nilai = altMatch[3].toUpperCase();
+         }
+      }
+
+      if (nama && sks > 0 && nilai) {
+        nama = nama.replace(/^\d+[\.\)]\s*/, '').trim(); 
+        
+        let finalNilai = this.nilaiOptions.find(n => n === nilai);
+        if (!finalNilai) {
+          if (nilai.includes('A')) finalNilai = 'A';
+          else if (nilai.includes('B')) finalNilai = 'B';
+          else if (nilai.includes('C')) finalNilai = 'C';
+        }
+
+        if (finalNilai && sks >= 1 && sks <= 8) {
+          this.nilaiService.addMataKuliah(this.selectedSemester!.id, {
+            nama: nama || 'Mata Kuliah',
+            sks: sks,
+            nilai: finalNilai
+          });
+          found++;
+        }
+      }
+    }
+
+    this.loadData();
+    
+    if (found > 0) {
+      this.showToast(`Berhasil menemukan ${found} mata kuliah dari gambar!`, 'success');
+    } else {
+      this.showToast('Tidak ada data SKS & Nilai yang valid ditemukan. Coba potong gambar lebih fokus.', 'warning');
+    }
+  }
+
+  async showToast(message: string, color: string) {
+    const toast = await this.toastController.create({
+      message,
+      color,
+      duration: 3000,
+      position: 'top'
+    });
+    await toast.present();
   }
 }

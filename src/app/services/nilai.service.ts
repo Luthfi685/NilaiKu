@@ -207,7 +207,7 @@ export class NilaiService {
 
   resetAllData(): void { localStorage.removeItem(this.STORAGE_KEY); }
 
-  getTheme(): string { return localStorage.getItem('nilaiku_theme') || 'dark'; }
+  getTheme(): string { return localStorage.getItem('nilaiku_theme') || 'light'; }
 
   getUserProfile(): string {
     return localStorage.getItem('nilaiku_user_name') || 'Mahasiswa';
@@ -215,6 +215,14 @@ export class NilaiService {
 
   setUserProfile(name: string) {
     localStorage.setItem('nilaiku_user_name', name);
+  }
+
+  getTargetSKS(): number {
+    return parseInt(localStorage.getItem('nilaiku_target_sks') || '144', 10);
+  }
+
+  setTargetSKS(sks: number) {
+    localStorage.setItem('nilaiku_target_sks', sks.toString());
   }
 
   getColorTheme(): string {

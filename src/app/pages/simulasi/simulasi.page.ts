@@ -25,6 +25,13 @@ export class SimulasiPage implements OnInit {
     this.currentSKS = this.nilaiService.getTotalSKS();
   }
 
+  get maxPossibleIPK(): number {
+    if (this.currentSKS === 0 && this.sksSisa === 0) return 4.00;
+    const currentPoints = this.currentIPK * this.currentSKS;
+    const futurePoints = 4.00 * this.sksSisa; // 4.00 is max grade weight (A)
+    return (currentPoints + futurePoints) / (this.currentSKS + this.sksSisa);
+  }
+
   simulate() {
     this.result = this.nilaiService.simulasiTarget(this.targetIPK, this.sksSisa);
     this.hasCalculated = true;

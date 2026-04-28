@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
 import { NilaiService, AkademikSummary } from '../../services/nilai.service';
 
 @Component({
@@ -8,6 +8,8 @@ import { NilaiService, AkademikSummary } from '../../services/nilai.service';
   standalone: false,
 })
 export class DashboardPage implements OnInit {
+  private nilaiService = inject(NilaiService);
+
   @ViewChild('miniChart', { static: false }) miniChart!: ElementRef<HTMLCanvasElement>;
 
   userName = 'Mahasiswa';
@@ -26,8 +28,6 @@ export class DashboardPage implements OnInit {
   chartData: { labels: string[]; ipsData: number[]; ipkData: number[] } = { labels: [], ipsData: [], ipkData: [] };
   semesterDetails: { nama: string; ips: number; sks: number }[] = [];
   perluPerbaikan: { mk: any; semester: string }[] = [];
-
-  constructor(private nilaiService: NilaiService) {}
 
   ngOnInit() {
     this.currentTheme = this.nilaiService.getTheme();

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { NilaiService } from '../../services/nilai.service';
 
 @Component({
@@ -7,7 +7,9 @@ import { NilaiService } from '../../services/nilai.service';
   styleUrls: ['./simulasi.page.scss'],
   standalone: false,
 })
-export class SimulasiPage implements OnInit {
+export class SimulasiPage {
+  private nilaiService = inject(NilaiService);
+
   targetIPK = 3.50;
   sksSisa = 20;
   currentIPK = 0;
@@ -16,9 +18,6 @@ export class SimulasiPage implements OnInit {
   result: { nilaiMinimum: number; nilaiHuruf: string; status: 'achievable' | 'difficult' | 'impossible' } | null = null;
   hasCalculated = false;
 
-  constructor(private nilaiService: NilaiService) {}
-
-  ngOnInit() {}
 
   ionViewWillEnter() {
     this.currentIPK = this.nilaiService.hitungIPK();

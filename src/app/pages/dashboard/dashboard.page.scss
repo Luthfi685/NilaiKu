@@ -337,7 +337,15 @@ ion-header ion-toolbar {
     &.danger-zone { h3 { color: #eb445a; opacity: 1; } .danger-text { font-size: 11px; opacity: 0.5; margin: 8px 0 0; text-align: center; } }
   }
 
-  .save-settings-btn { --background: var(--grad-purple); margin-top: 10px; --border-radius: 12px; height: 50px; font-weight: 700; }
+  .save-settings-btn { 
+    --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    color: white;
+    margin-top: 10px; 
+    margin-bottom: 30px;
+    --border-radius: 12px; 
+    height: 50px; 
+    font-weight: 700; 
+  }
 }
 
 .prediksi-box {
@@ -407,8 +415,16 @@ ion-header ion-toolbar {
 // ===== Semester Quick =====
 .semester-quick {
   margin-bottom: 16px;
+  padding: 16px; // Tambah padding biar nggak mepet ke pinggir card
 
-  h3 { font-size: 14px; font-weight: 700; margin: 0 0 12px; }
+  h3 { 
+    font-size: 14px; 
+    font-weight: 700; 
+    margin: 0 0 16px; 
+    display: flex;
+    align-items: center;
+    gap: 8px; // Jaga jarak antara icon dan teks
+  }
 
   .semester-scroll {
     display: flex;

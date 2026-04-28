@@ -57,7 +57,6 @@
           <ion-button *ngIf="!editingMk" color="secondary" size="small" (click)="triggerFileSelect()">
             <ion-icon name="scan-outline" slot="start"></ion-icon> Scan Gambar
           </ion-button>
-          <input type="file" #fileInput accept="image/*" (change)="handleImageScan($event)" style="display: none;" />
         </div>
 
         <div class="form-group">

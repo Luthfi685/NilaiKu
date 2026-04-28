@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit, inject } from '@angular/core';
 import { NilaiService, Semester } from '../../services/nilai.service';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -9,7 +9,9 @@ import html2canvas from 'html2canvas';
   styleUrls: ['./rekap.page.scss'],
   standalone: false,
 })
-export class RekapPage implements OnInit {
+export class RekapPage {
+  private nilaiService = inject(NilaiService);
+
   @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   semesters: Semester[] = [];
@@ -22,9 +24,6 @@ export class RekapPage implements OnInit {
     labels: [], ipsData: [], ipkData: []
   };
 
-  constructor(private nilaiService: NilaiService) {}
-
-  ngOnInit() {}
 
   ionViewWillEnter() {
     this.loadData();

@@ -1,6 +1,7 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
 import { NilaiService, Semester, MataKuliah } from '../../services/nilai.service';
 import { AlertController, ActionSheetController, LoadingController, ToastController } from '@ionic/angular';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 // @ts-ignore
 import * as Tesseract from 'tesseract.js';
 
@@ -11,6 +12,12 @@ import * as Tesseract from 'tesseract.js';
   standalone: false,
 })
 export class KalkulatorPage implements OnInit {
+  private nilaiService = inject(NilaiService);
+  private alertController = inject(AlertController);
+  private actionSheetController = inject(ActionSheetController);
+  private loadingController = inject(LoadingController);
+  private toastController = inject(ToastController);
+
   semesters: Semester[] = [];
   selectedSemester: Semester | null = null;
   nilaiOptions: string[] = [];
@@ -24,14 +31,6 @@ export class KalkulatorPage implements OnInit {
   editingMk: MataKuliah | null = null;
 
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
-
-  constructor(
-    private nilaiService: NilaiService,
-    private alertController: AlertController,
-    private actionSheetController: ActionSheetController,
-    private loadingController: LoadingController,
-    private toastController: ToastController
-  ) {}
 
   ngOnInit() {
     this.nilaiOptions = this.nilaiService.getNilaiOptions();
@@ -150,32 +149,45 @@ export class KalkulatorPage implements OnInit {
     return 'danger';
   }
 
-  triggerFileSelect() {
-    if (this.fileInput) {
-      this.fileInput.nativeElement.click();
+  async triggerFileSelect() {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 80,
+        width: 1200, // Resize gambar supaya OCR jauh lebih cepat
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt
+      });
+
+      if (image && image.dataUrl) {
+        this.processImageData(image.dataUrl);
+      }
+    } catch (e) {
+      console.log('User cancelled or error', e);
     }
   }
 
-  async handleImageScan(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    
+  async processImageData(dataUrl: string) {
     const loading = await this.loadingController.create({
-      message: 'Membaca teks dari gambar... Mohon tunggu.',
+      message: 'Menyiapkan scanner...',
     });
     await loading.present();
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (e: any) => {
-        const dataUrl = e.target.result;
-        const { data: { text } } = await Tesseract.recognize(dataUrl, 'eng+ind');
-        await loading.dismiss();
-        this.parseOCRText(text);
-        input.value = ''; // reset
-      };
-      reader.readAsDataURL(file);
+      // Hanya gunakan 'eng' (English) karena alfabetnya sama dan file modelnya jauh lebih kecil dibanding 'eng+ind'
+      const { data: { text } } = await Tesseract.recognize(dataUrl, 'eng', {
+        logger: (m: any) => {
+          if (m.status === 'recognizing text') {
+            loading.message = `Membaca teks: ${Math.round(m.progress * 100)}%`;
+          } else if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
+            loading.message = 'Mengunduh modul OCR... (Hanya pertama kali)';
+          } else {
+            loading.message = 'Memproses gambar...';
+          }
+        }
+      });
+      await loading.dismiss();
+      this.parseOCRText(text);
     } catch (error) {
       await loading.dismiss();
       this.showToast('Gagal memproses gambar.', 'danger');
